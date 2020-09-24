@@ -12,6 +12,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import com.daasuu.epf.EPlayerView;
+import com.daasuu.epf.filter.GlFilter;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
@@ -39,8 +42,10 @@ public final class ExoPlayerView extends FrameLayout {
     private Context context;
     private ViewGroup.LayoutParams layoutParams;
 
+    private FilterType filterText;  
     private boolean useTextureView = true;
     private boolean hideShutterView = false;
+    private boolean filterEnabled = false;
 
     public ExoPlayerView(Context context) {
         this(context, null);
@@ -86,7 +91,12 @@ public final class ExoPlayerView extends FrameLayout {
     }
 
     private void setVideoView() {
-        if (surfaceView instanceof TextureView) {
+        if (surfaceView instanceof EPlayerView) {
+            ((EPlayerView) surfaceView).setSimpleExoPlayer(this.player);
+            if(this.filterText != null) {
+                this.setFilterHelper(filterText);
+            }
+        } else if (surfaceView instanceof TextureView) {
             player.setVideoTextureView((TextureView) surfaceView);
         } else if (surfaceView instanceof SurfaceView) {
             player.setVideoSurfaceView((SurfaceView) surfaceView);
@@ -94,10 +104,16 @@ public final class ExoPlayerView extends FrameLayout {
     }
 
     private void updateSurfaceView() {
-        View view = useTextureView ? new TextureView(context) : new SurfaceView(context);
-        view.setLayoutParams(layoutParams);
-
-        surfaceView = view;
+        if(filterEnabled) {
+            view.setLayoutParams(layoutParams);	           
+             View view = new EPlayerView(this.getContext());
+                view.setLayoutParams(layoutParams);
+                surfaceView = view;
+            } else {
+                View view = useTextureView ? new TextureView(context) : new SurfaceView(context);
+                view.setLayoutParams(layoutParams);
+                surfaceView = view;
+            }
         if (layout.getChildAt(0) != null) {
             layout.removeViewAt(0);
         }
@@ -152,16 +168,6 @@ public final class ExoPlayerView extends FrameLayout {
 
     }
 
-    /**
-     * Get the view onto which video is rendered. This is either a {@link SurfaceView} (default)
-     * or a {@link TextureView} if the {@code use_texture_view} view attribute has been set to true.
-     *
-     * @return either a {@link SurfaceView} or a {@link TextureView}.
-     */
-    public View getVideoSurfaceView() {
-        return surfaceView;
-    }
-
     public void setUseTextureView(boolean useTextureView) {
         if (useTextureView != this.useTextureView) {
             this.useTextureView = useTextureView;
@@ -169,6 +175,25 @@ public final class ExoPlayerView extends FrameLayout {
         }
     }
 
+    public void setFilter(FilterType filterText) {
+        this.filterText = filterText;
+        setFilterHelper(filterText);
+
+    }
+
+    private void setFilterHelper(FilterType filterText) {
+        if(surfaceView instanceof EPlayerView) {
+            ((EPlayerView) surfaceView).setGlFilter(FilterType.createGlFilter(filterText));
+        }
+    }
+
+    public void enableFilter(boolean filterEnabled) {
+        if(filterEnabled != this.filterEnabled) {
+            this.filterEnabled = filterEnabled;
+            updateSurfaceView();
+        }
+    }
+    
     public void setHideShutterView(boolean hideShutterView) {
         this.hideShutterView = hideShutterView;
         updateShutterViewVisibility();

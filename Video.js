@@ -6,14 +6,14 @@ import TextTrackType from './TextTrackType';
 import FilterType from './FilterType';
 import DRMType from './DRMType';
 import VideoResizeMode from './VideoResizeMode.js';
-
+import AndroidFilterType from './AndroidFilterType';
 const styles = StyleSheet.create({
   base: {
     overflow: 'hidden',
   },
 });
 
-export { TextTrackType, FilterType, DRMType };
+export { TextTrackType, FilterType, DRMType, AndroidFilterType };
 
 export default class Video extends Component {
 
@@ -76,7 +76,16 @@ export default class Video extends Component {
   };
 
   save = async (options?) => {
-    return await NativeModules.VideoManager.save(options, findNodeHandle(this._root));
+    if (Platform.OS === 'android') {
+      const { filterText, inputUrl, outputUrl } = options;
+      return await NativeModules.VideoManager.save(
+        filterText,
+        inputUrl,
+        outputUrl
+      );
+    } else {
+      return await NativeModules.VideoManager.save(options, findNodeHandle(this._root));
+    }
   }
 
   restoreUserInterfaceForPictureInPictureStopCompleted = (restored) => {
@@ -249,7 +258,7 @@ export default class Video extends Component {
           NativeModules.VideoManager.setLicenseError && NativeModules.VideoManager.setLicenseError(error, findNodeHandle(this._root));
         });
       } else {
-        NativeModules.VideoManager.setLicenseError && NativeModules.VideoManager.setLicenseError("No spc received", findNodeHandle(this._root));
+        NativeModules.VideoManager.setLicenseError && NativeModules.VideoManager.setLicenseError('No spc received', findNodeHandle(this._root));
       }
     }
   }
@@ -368,6 +377,20 @@ Video.propTypes = {
     FilterType.TONAL,
     FilterType.TRANSFER,
     FilterType.SEPIA,
+    AndroidFilterType.NONE,
+    AndroidFilterType.GRAY_SCALE,
+    AndroidFilterType.SEPIA,
+    AndroidFilterType.INVERT,
+    AndroidFilterType.HAZE,
+    AndroidFilterType.MONOCHROME,
+    AndroidFilterType.BILATERAL_BLUR,
+    AndroidFilterType.SPHERE_REFRACTION,
+    AndroidFilterType.VIGNETTE,
+    AndroidFilterType.FILTER_GROUP_SAMPLE,
+    AndroidFilterType.GAUSSIAN_FILTER,
+    AndroidFilterType.BULGE_DISTORTION,
+    AndroidFilterType.CGA_COLORSPACE,
+    AndroidFilterType.BOX_BLUR,
   ]),
   filterEnabled: PropTypes.bool,
   /* Native only */
@@ -403,7 +426,7 @@ Video.propTypes = {
   ]),
   drm: PropTypes.shape({
     type: PropTypes.oneOf([
-      DRMType.CLEARKEY, DRMType.FAIRPLAY, DRMType.WIDEVINE, DRMType.PLAYREADY
+      DRMType.CLEARKEY, DRMType.FAIRPLAY, DRMType.WIDEVINE, DRMType.PLAYREADY,
     ]),
     licenseServer: PropTypes.string,
     headers: PropTypes.shape({}),
